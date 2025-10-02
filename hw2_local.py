@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 def load_data(path = "CreditCard.csv"):
     """
@@ -27,10 +27,10 @@ def load_data(path = "CreditCard.csv"):
         "CarOwner": (data_frame["CarOwner"] == "Y").astype(int),
         "PropertyOwner": (data_frame["PropertyOwner"] == "Y").astype(int),
         "Children": data_frame["#Children"].astype(float),
-        "WorkPhone": data_frame["workPhone"].astype(int),
-        "Email": data_frame["Email"].astype(int),
+        "WorkPhone": data_frame["WorkPhone"].astype(int),
+        "Email": data_frame["Email_ID"].astype(int),
     }).to_numpy(dtype=float)
-    y = data_frame["CreditApproval"].astype(float).to_numpy()
+    y = data_frame["CreditApprove"].astype(float).to_numpy()
     
     return x,y
 
@@ -66,7 +66,7 @@ def fitness(w, x, y):
         float of non negitive fitness (the higher the better)
     """
 
-    return np.exp(-er(w, x, y))
+    return np.exp(-error(w, x, y))
 
 def crossover(a, b):
     """
@@ -111,3 +111,72 @@ def mutate(w, rng, p = 0.02):
     return v
 
 
+def neighbor_oneflip(w):
+    """
+    All 1-flip neighbors of w (flipping only 1 postion)
+    """
+    nbs = []
+
+    for j in range(w.size):
+
+        v = w.copy()
+        v[j] = -v[j] # flip the sign at index j
+        nbs.append(v)
+
+    return nbs
+
+def generic_algorithm(x, y, pop_size=20, gens=60, mut_p=0.02, seed=0):
+
+    rng = np.random.default_rng(seed)
+    d = x.shape[1]
+    pop = rng.choice([-1.0,1.0], size=(pop_size, d))
+
+    best_errs = []
+    best_w = pop[0].copy()
+    best_e = error(best_w, x, y)
+
+    for _ in range(gens):
+        # fitness for selction
+        fits = np.array([fitness(ind, x, y) for ind in pop])
+
+        # track the best
+        i_best = np.argmax(fits)
+        e_cur = error(pop[i_best], x, y)
+
+        if e_cur < best_e:
+            best_e = e_cur
+            best_w = pop[i_best].copy()
+        best_errs.append(best_e)
+
+        # selection propablities
+        probs = fits / (fits.sum() + 1e-12)
+
+        # create the new generation
+        new_pop = []
+        while len(new_pop) < pop_size:
+
+            i, j = rng.choice(pop_size, size=2, replace=True, p=probs)
+            child = crossover(pop[i], pop[j]) # now we have the midpoint/cross over
+
+            child = mutate(child, rng, p=mut_p) # now we have the sign flips done
+            new_pop.append(child)
+
+        pop = np.array(new_pop)
+
+    return best_w, np.array(best_errs)
+    
+
+# run it an plot it up
+x,y = load_data("CreditCard.csv")
+w_ga, errs_ga = generic_algorithm(x, y, pop_size=20, gens=60, mut_p=0.02, seed=0)
+
+print("GA best w: ", w_ga)
+print("GA best error: ", errs_ga[-1])
+
+plt.figure()
+plt.plot(range(len(errs_ga)), errs_ga, marker="o")
+plt.xlabel("Generation")
+plt.ylabel("Best error(w)")
+plt.title("Generic algorithm convergence")
+plt.tight_layout()
+plt.savefig("fig_generic.png", dpi=200)
