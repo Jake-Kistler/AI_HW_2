@@ -55,7 +55,7 @@ def fitness(w, x, y):
     """
     Calcaulte GA fitness from the mean squared error
 
-    Fitness = exp(-er(w, x, y) / temperature)
+    Fitness = exp(-error(w, x, y) / temperature)
 
     Parameters:
         w: (n_features,) array like weight vector {-1,+1}
@@ -110,22 +110,7 @@ def mutate(w, rng, p = 0.02):
 
     return v
 
-
-def neighbor_oneflip(w):
-    """
-    All 1-flip neighbors of w (flipping only 1 postion)
-    """
-    nbs = []
-
-    for j in range(w.size):
-
-        v = w.copy()
-        v[j] = -v[j] # flip the sign at index j
-        nbs.append(v)
-
-    return nbs
-
-def generic_algorithm(x, y, pop_size=20, gens=60, mut_p=0.02, seed=0):
+def genetic_algorithm(x, y, pop_size=20, gens=60, mut_p=0.02, seed=0):
 
     rng = np.random.default_rng(seed)
     d = x.shape[1]
@@ -164,19 +149,18 @@ def generic_algorithm(x, y, pop_size=20, gens=60, mut_p=0.02, seed=0):
         pop = np.array(new_pop)
 
     return best_w, np.array(best_errs)
-    
 
-# run it an plot it up
-x,y = load_data("CreditCard.csv")
-w_ga, errs_ga = generic_algorithm(x, y, pop_size=20, gens=60, mut_p=0.02, seed=0)
+if __name__ == "__main__":
+    x, y = load_data("CreditCard.csv")
 
-print("GA best w: ", w_ga)
-print("GA best error: ", errs_ga[-1])
+    w_ga, errs_ga = genetic_algorithm(x, y, pop_size=20, gens=60, mut_p=0.02, seed=0)
+    print("GA best w:", w_ga)
+    print("GA best error:", errs_ga[-1])
 
-plt.figure()
-plt.plot(range(len(errs_ga)), errs_ga, marker="o")
-plt.xlabel("Generation")
-plt.ylabel("Best error(w)")
-plt.title("Generic algorithm convergence")
-plt.tight_layout()
-plt.savefig("fig_generic.png", dpi=200)
+    plt.figure()
+    plt.plot(range(len(errs_ga)), errs_ga, marker="o")
+    plt.xlabel("Generation")
+    plt.ylabel("Best error(w)")
+    plt.title("Genetic algorithm convergence")
+    plt.tight_layout()
+    plt.savefig("fig_ga.png", dpi=200)
